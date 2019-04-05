@@ -32,6 +32,7 @@
 
 /** Datatype used to hold the number of ticks until a timer expires */
 typedef uint16_t ticks;
+#define MAX_BASE_PERIOD     (sizeof(ticks)/2)
 
 /** Typedef for the function pointer for the timeout callback function */
 typedef ticks (*task_callback)(void *payload);
@@ -61,12 +62,12 @@ void scheduler_init(void);
 /**
  * \brief Schedule the specified timer task to execute at the specified time
  *
- * \param[in] timer Pointer to struct describing the task to execute
- * \param[in] timeout Number of ticks to wait before executing the task
+ * \param[in] task      Pointer to struct describing the task to execute
+ * \param[in] ms        Number of ms to wait before executing the task
  *
- * \return Nothing
+ * \return              true if succesful, false if ms too small or too large
  */
-void scheduler_create_task(strTask_t *task, ticks period);
+bool scheduler_create_task(strTask_t *task, uint32_t ms);
 
 /**
  * \brief Delete the specified timer task so it won't be executed

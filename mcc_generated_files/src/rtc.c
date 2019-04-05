@@ -224,14 +224,21 @@ void scheduler_next(void)
 // This function queues a task with a given period/duration
 // If the task was already active/running it will be replaced by this and the
 //    old (active) task will be removed/cancelled first
-void scheduler_create_task(strTask_t *task, ticks period)
+// inputs:
+//   ms         time expressed in ms, stored in multiples of SCHEDULER_BASE_PERIOD
+//   return     true if successful, false if period < SCHEDULER_BASE_PERIOD
+bool scheduler_create_task(strTask_t *task, uint32_t ms)
 {
     // If this task is already active, replace it
 	scheduler_delete_task(task);
 
 	RTC_INT_DISABLE();         // disable rtc interrupts
 
-    task->period = period;     // store period
+    ms /= SCHEDULER_BASE_PERIOD;
+    if ((ms == 0) || (ms > MAX_BASE_PERIOD))
+        return false;
+
+    task->period = (ticks)ms;               // store period scaled
     task->due = curr_time + task->period;   // compute due time
 
 	// We only have to start the task at head if the insert was at the head
@@ -243,6 +250,7 @@ void scheduler_create_task(strTask_t *task, ticks period)
             RTC_INT_ENABLE();
         }
 	}
+    return true;    // successful inser
 }
 
 ISR(RTC_CNT_vect)
