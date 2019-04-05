@@ -25,46 +25,6 @@
 
 void PIN_MANAGER_Initialize()
 {
-	PA2_set_dir(
-	    // <y> Pin direction
-	    // <id> pad_dir
-	    // <PORT_DIR_OFF"> Off
-	    // <PORT_DIR_IN"> In
-	    // <PORT_DIR_OUT"> Out
-	    PORT_DIR_IN);
-
-	PA2_set_level(
-	    // <y> Initial level
-	    // <id> pad_initial_level
-	    // <false"> Low
-	    // <true"> High
-	    false);
-
-	PA2_set_pull_mode(
-	    // <y> Pull configuration
-	    // <id> pad_pull_config
-	    // <PORT_PULL_OFF"> Off
-	    // <PORT_PULL_UP"> Pull-up
-	    PORT_PULL_OFF);
-
-	PA2_set_inverted(
-	    // <y> Invert I/O on pin
-	    // <id> pad_invert
-	    // <false"> Not inverted
-	    // <true"> Inverted
-	    false);
-
-	PA2_set_isc(
-	    // <y> Pin Input/Sense Configuration
-	    // <id> pad_isc
-	    // <PORT_ISC_INTDISABLE_gc"> Interrupt disabled but input buffer enabled
-	    // <PORT_ISC_BOTHEDGES_gc"> Sense Both Edges
-	    // <PORT_ISC_RISING_gc"> Sense Rising Edge
-	    // <PORT_ISC_FALLING_gc"> Sense Falling Edge
-	    // <PORT_ISC_INPUT_DISABLE_gc"> Digital Input Buffer disabled
-	    // <PORT_ISC_LEVEL_gc"> Sense low Level
-	    PORT_ISC_INTDISABLE_gc);
-
 	PD5_set_dir(
 	    // <y> Pin direction
 	    // <id> pad_dir
@@ -104,6 +64,46 @@ void PIN_MANAGER_Initialize()
 	    // <PORT_ISC_INPUT_DISABLE_gc"> Digital Input Buffer disabled
 	    // <PORT_ISC_LEVEL_gc"> Sense low Level
 	    PORT_ISC_INPUT_DISABLE_gc);
+
+	PA2_set_dir(
+	    // <y> Pin direction
+	    // <id> pad_dir
+	    // <PORT_DIR_OFF"> Off
+	    // <PORT_DIR_IN"> In
+	    // <PORT_DIR_OUT"> Out
+	    PORT_DIR_IN);
+
+	PA2_set_level(
+	    // <y> Initial level
+	    // <id> pad_initial_level
+	    // <false"> Low
+	    // <true"> High
+	    false);
+
+	PA2_set_pull_mode(
+	    // <y> Pull configuration
+	    // <id> pad_pull_config
+	    // <PORT_PULL_OFF"> Off
+	    // <PORT_PULL_UP"> Pull-up
+	    PORT_PULL_OFF);
+
+	PA2_set_inverted(
+	    // <y> Invert I/O on pin
+	    // <id> pad_invert
+	    // <false"> Not inverted
+	    // <true"> Inverted
+	    false);
+
+	PA2_set_isc(
+	    // <y> Pin Input/Sense Configuration
+	    // <id> pad_isc
+	    // <PORT_ISC_INTDISABLE_gc"> Interrupt disabled but input buffer enabled
+	    // <PORT_ISC_BOTHEDGES_gc"> Sense Both Edges
+	    // <PORT_ISC_RISING_gc"> Sense Rising Edge
+	    // <PORT_ISC_FALLING_gc"> Sense Falling Edge
+	    // <PORT_ISC_INPUT_DISABLE_gc"> Digital Input Buffer disabled
+	    // <PORT_ISC_LEVEL_gc"> Sense low Level
+	    PORT_ISC_INTDISABLE_gc);
 
 	SW0_set_dir(
 	    // <y> Pin direction
@@ -175,6 +175,86 @@ void PIN_MANAGER_Initialize()
 	    false);
 
 	CONF_WIFI_M2M_RESET_PIN_set_isc(
+	    // <y> Pin Input/Sense Configuration
+	    // <id> pad_isc
+	    // <PORT_ISC_INTDISABLE_gc"> Interrupt disabled but input buffer enabled
+	    // <PORT_ISC_BOTHEDGES_gc"> Sense Both Edges
+	    // <PORT_ISC_RISING_gc"> Sense Rising Edge
+	    // <PORT_ISC_FALLING_gc"> Sense Falling Edge
+	    // <PORT_ISC_INPUT_DISABLE_gc"> Digital Input Buffer disabled
+	    // <PORT_ISC_LEVEL_gc"> Sense low Level
+	    PORT_ISC_INTDISABLE_gc);
+
+	CS_set_dir(
+	    // <y> Pin direction
+	    // <id> pad_dir
+	    // <PORT_DIR_OFF"> Off
+	    // <PORT_DIR_IN"> In
+	    // <PORT_DIR_OUT"> Out
+	    PORT_DIR_OUT);
+
+	CS_set_level(
+	    // <y> Initial level
+	    // <id> pad_initial_level
+	    // <false"> Low
+	    // <true"> High
+	    false);
+
+	CS_set_pull_mode(
+	    // <y> Pull configuration
+	    // <id> pad_pull_config
+	    // <PORT_PULL_OFF"> Off
+	    // <PORT_PULL_UP"> Pull-up
+	    PORT_PULL_OFF);
+
+	CS_set_inverted(
+	    // <y> Invert I/O on pin
+	    // <id> pad_invert
+	    // <false"> Not inverted
+	    // <true"> Inverted
+	    false);
+
+	CS_set_isc(
+	    // <y> Pin Input/Sense Configuration
+	    // <id> pad_isc
+	    // <PORT_ISC_INTDISABLE_gc"> Interrupt disabled but input buffer enabled
+	    // <PORT_ISC_BOTHEDGES_gc"> Sense Both Edges
+	    // <PORT_ISC_RISING_gc"> Sense Rising Edge
+	    // <PORT_ISC_FALLING_gc"> Sense Falling Edge
+	    // <PORT_ISC_INPUT_DISABLE_gc"> Digital Input Buffer disabled
+	    // <PORT_ISC_LEVEL_gc"> Sense low Level
+	    PORT_ISC_INTDISABLE_gc);
+
+	PWM_set_dir(
+	    // <y> Pin direction
+	    // <id> pad_dir
+	    // <PORT_DIR_OFF"> Off
+	    // <PORT_DIR_IN"> In
+	    // <PORT_DIR_OUT"> Out
+	    PORT_DIR_OUT);
+
+	PWM_set_level(
+	    // <y> Initial level
+	    // <id> pad_initial_level
+	    // <false"> Low
+	    // <true"> High
+	    false);
+
+	PWM_set_pull_mode(
+	    // <y> Pull configuration
+	    // <id> pad_pull_config
+	    // <PORT_PULL_OFF"> Off
+	    // <PORT_PULL_UP"> Pull-up
+	    PORT_PULL_OFF);
+
+	PWM_set_inverted(
+	    // <y> Invert I/O on pin
+	    // <id> pad_invert
+	    // <false"> Not inverted
+	    // <true"> Inverted
+	    false);
+
+	PWM_set_isc(
 	    // <y> Pin Input/Sense Configuration
 	    // <id> pad_isc
 	    // <PORT_ISC_INTDISABLE_gc"> Interrupt disabled but input buffer enabled
@@ -695,6 +775,46 @@ void PIN_MANAGER_Initialize()
 	    false);
 
 	LED_BLUE_set_isc(
+	    // <y> Pin Input/Sense Configuration
+	    // <id> pad_isc
+	    // <PORT_ISC_INTDISABLE_gc"> Interrupt disabled but input buffer enabled
+	    // <PORT_ISC_BOTHEDGES_gc"> Sense Both Edges
+	    // <PORT_ISC_RISING_gc"> Sense Rising Edge
+	    // <PORT_ISC_FALLING_gc"> Sense Falling Edge
+	    // <PORT_ISC_INPUT_DISABLE_gc"> Digital Input Buffer disabled
+	    // <PORT_ISC_LEVEL_gc"> Sense low Level
+	    PORT_ISC_INTDISABLE_gc);
+
+	RST_set_dir(
+	    // <y> Pin direction
+	    // <id> pad_dir
+	    // <PORT_DIR_OFF"> Off
+	    // <PORT_DIR_IN"> In
+	    // <PORT_DIR_OUT"> Out
+	    PORT_DIR_OUT);
+
+	RST_set_level(
+	    // <y> Initial level
+	    // <id> pad_initial_level
+	    // <false"> Low
+	    // <true"> High
+	    false);
+
+	RST_set_pull_mode(
+	    // <y> Pull configuration
+	    // <id> pad_pull_config
+	    // <PORT_PULL_OFF"> Off
+	    // <PORT_PULL_UP"> Pull-up
+	    PORT_PULL_OFF);
+
+	RST_set_inverted(
+	    // <y> Invert I/O on pin
+	    // <id> pad_invert
+	    // <false"> Not inverted
+	    // <true"> Inverted
+	    false);
+
+	RST_set_isc(
 	    // <y> Pin Input/Sense Configuration
 	    // <id> pad_isc
 	    // <PORT_ISC_INTDISABLE_gc"> Interrupt disabled but input buffer enabled

@@ -27,12 +27,12 @@
 #include "../utils/compiler.h"
 #include <stdint.h>
 #include <stdbool.h>
+#include <limits.h>
 
-#define SCHEDULER_BASE_PERIOD 10    // ms
 
 /** Datatype used to hold the number of ticks until a timer expires */
 typedef uint16_t ticks;
-#define MAX_BASE_PERIOD     (sizeof(ticks)/2)
+#define MAX_BASE_PERIOD     (SHRT_MAX)
 
 /** Typedef for the function pointer for the timeout callback function */
 typedef ticks (*task_callback)(void *payload);
@@ -67,7 +67,7 @@ void scheduler_init(void);
  *
  * \return              true if succesful, false if ms too small or too large
  */
-bool scheduler_create_task(strTask_t *task, uint32_t ms);
+bool scheduler_create_task(strTask_t *task, uint16_t ms);
 
 /**
  * \brief Delete the specified timer task so it won't be executed
@@ -94,6 +94,8 @@ void scheduler_flush_all(void);
  * \return Nothing
  */
 void scheduler_next(void);
+
+void scheduler_print_list();
 
 
 #endif /* SCHEDULER_H */

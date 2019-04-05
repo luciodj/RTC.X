@@ -22,12 +22,16 @@
 */
 
 #include <stdio.h>
-#include "../include/rtc.h"
+#include "../mcc.h"
 #include "../utils/atomic.h"
 
-#define RTC_INT_DISABLE()   do{RTC.INTCTRL &= ~RTC_OVF_bm;}while(0);
-#define RTC_INT_ENABLE()    do{RTC.INTCTRL |= RTC_OVF_bm;} while(0);
-#define RTC_INT_GET()       ((RTC.INTCTRL & RTC_OVF_bm) >> RTC_OVF_bp)
+#define SCHEDULER_BASE_PERIOD 8    // ms
+
+#define RTC_INT_DISABLE()   do{RTC_PITINTCTRL &= ~RTC_PI_bm;}while(0);
+#define RTC_INT_ENABLE()    do{RTC_PITINTCTRL |= RTC_PI_bm;}while(0);
+#define RTC_INT_GET()       ((RTC_PITINTCTRL  &  RTC_PI_bm) >> RTC_PI_bp)
+#define RTC_INT_CLEAR()     do{RTC_PITINTFLAGS = 1;}while(0);
+
 static strTask_t *tasks_head        = NULL;
 static strTask_t *volatile due_head = NULL;
 
@@ -40,7 +44,7 @@ volatile bool   run       = false;
 // to simplify the check we compute the difference and cast it to signed
 inline bool greaterOrEqual(ticks a, ticks thenb)
 {
-    return ((int16_t)(curr_time - tasks_head->due) >= 0);
+    return ((int16_t)(a - thenb) >= 0);
 }
 
 void scheduler_init(void)
@@ -51,15 +55,13 @@ void scheduler_init(void)
 
 
 	RTC.CTRLA = RTC_PRESCALER_DIV1_gc   /* Prescaling Factor: RTC Clock/1 */
-              | 1 << RTC_RTCEN_bp       /* Enabled */
+              | 0 << RTC_RTCEN_bp       /* Enabled */
               | 0 << RTC_RUNSTDBY_bp;   /* Run In Standby: disabled */
 
 	RTC.CLKSEL = RTC_CLKSEL_INT1K_gc;   /* Clock Select: Internal 1kHz OSC */
 
-    RTC.INTCTRL = 0 << RTC_CMP_bp       /* Compare Match Interrupt disabled */
-                | 1 << RTC_OVF_bp;      /* Overflow Interrupt enabled */
-
-    RTC.CNT = -SCHEDULER_BASE_PERIOD;
+    RTC.PITCTRLA = RTC_PI_bm            // enable PIT function
+                 | RTC_PERIOD_CYC8_gc;// 128 (32768/256) cycles per second
 }
 
 // Disable all the timers without deleting them from any list. Timers can be
@@ -70,21 +72,16 @@ void scheduler_stop(void)
 	run = false;
 }
 
-inline void rtc_set_period(ticks period)
-{ //
-	ticks last_load = RTC.CNT - period;     // TODO consider - compensation
-	while (RTC.STATUS & RTC_CNTBUSY_bm);    // Wait for clock domain synchronization
-	RTC.CNT = last_load;                    //
-}
-
 void scheduler_print_list(void)
 {
 	strTask_t *pTask = tasks_head;
+
+    printf("@%d tasks_head -> ", curr_time);
 	while (pTask != NULL) {
-		printf("%s:%ld -> ", pTask->name, (uint32_t)pTask->period);
+		printf("%s:%ld -> ", pTask->name, (uint32_t)pTask->due);
 		pTask = pTask->next;
 	}
-	printf(".\n");
+	printf("NULL\n");
 }
 
 // Returns true if the insert was at the head, false if not
@@ -95,9 +92,8 @@ bool task_queue_insert(strTask_t *task)
 	strTask_t *prev_point   = NULL;
 
     task->next = NULL;
-
 	while (insert_point != NULL) {
-		if (greaterOrEqual(insert_point->period, task->due)) {
+		if (greaterOrEqual(insert_point->due, task->due)) {
 			break; // found the spot
 		}
 		prev_point   = insert_point;
@@ -121,12 +117,12 @@ void check_scheduler_queue(void)
 {
 	RTC_INT_DISABLE();         // disable rtc interrupts
 
-	if (tasks_head == NULL)     // no tasks left
-	{
+	if (tasks_head == NULL) {  // no tasks left
+//        puts("stop");
 		scheduler_stop();
 		return;
 	}
-
+//    puts("run");
     RTC_INT_ENABLE();
 	run = true;
 }
@@ -206,10 +202,11 @@ void scheduler_next(void)
 	RTC_INT_DISABLE();              // disable rtc interrupts
 
 	strTask_t *pTask = due_head;    // pick the first task due
+    printf("@%d task:%s!\n", curr_time, pTask->name);
 	due_head = due_head->next;      // and remove it from the list
     task_queue_insert(pTask);       // re-enter it immediately in the task queue
-
-	if (tempIE) {
+//    scheduler_print_list();
+    if (tempIE) {
         RTC_INT_ENABLE();
     }
 
@@ -227,16 +224,16 @@ void scheduler_next(void)
 // inputs:
 //   ms         time expressed in ms, stored in multiples of SCHEDULER_BASE_PERIOD
 //   return     true if successful, false if period < SCHEDULER_BASE_PERIOD
-bool scheduler_create_task(strTask_t *task, uint32_t ms)
+bool scheduler_create_task(strTask_t *task, uint16_t ms)
 {
     // If this task is already active, replace it
 	scheduler_delete_task(task);
-
 	RTC_INT_DISABLE();         // disable rtc interrupts
 
-    ms /= SCHEDULER_BASE_PERIOD;
-    if ((ms == 0) || (ms > MAX_BASE_PERIOD))
+    if ((ms == 0) || (ms > MAX_BASE_PERIOD)){
         return false;
+    }
+    scheduler_print_list();
 
     task->period = (ticks)ms;               // store period scaled
     task->due = curr_time + task->period;   // compute due time
@@ -250,27 +247,21 @@ bool scheduler_create_task(strTask_t *task, uint32_t ms)
             RTC_INT_ENABLE();
         }
 	}
-    return true;    // successful inser
+    return true;    // successful creation
 }
 
-ISR(RTC_CNT_vect)
+ISR(RTC_PIT_vect)
 {
-	rtc_set_period(SCHEDULER_BASE_PERIOD);
-    curr_time++;    // forever advancing and wrapping around
-
+    curr_time += SCHEDULER_BASE_PERIOD;    // forever advancing and wrapping around
     // activate tasks that are due (move to due list))
-    while (  (tasks_head)
-          && greaterOrEqual(curr_time, tasks_head->due) ) {
-            strTask_t * pTask = tasks_head;
-            pTask->due += pTask->period;    // update immediately the due time
-
-            pTask->next = due_head;         // insert at head of due
-            due_head = pTask;
-
-            tasks_head = tasks_head->next;  // remove task from scheduler queue
+    while( (tasks_head)  &&
+            greaterOrEqual(curr_time, tasks_head->due) ) {
+        tasks_head->due += tasks_head->period;    // update immediately the due time
+        strTask_t * pNext = tasks_head->next;     // save next temporarily
+        tasks_head->next = due_head;         // insert at head of due
+        due_head = tasks_head;
+        tasks_head = pNext;             // remove task from scheduler queue
         }
 
-	check_scheduler_queue();
-
-	RTC.INTFLAGS = RTC_OVF_bm;  // clear the flag
+	RTC_INT_CLEAR();
 }

@@ -33,13 +33,14 @@ SOFTWARE.
 #include "mcc_generated_files/sensors_handling.h"
 #include "mcc_generated_files/cloud/cloud_service.h"
 #include "mcc_generated_files/debug_print.h"
+#include "mcc_generated_files/mcc.h"
 
 //This handles messages published from the MQTT server when subscribed
 void receivedFromCloud(uint8_t *topic, uint8_t *payload)
 {
     char *toggleToken = "\"toggle\":";
     char *subString;
-    
+
     if ((subString = strstr((char*)payload, toggleToken)))
     {
         LED_holdYellowOn( subString[strlen(toggleToken)] == '1' );
@@ -50,12 +51,12 @@ void receivedFromCloud(uint8_t *topic, uint8_t *payload)
     debug_printer(SEVERITY_NONE, LEVEL_NORMAL, "payload: %s", payload);
 }
 
-// This will get called every 1 second only while we have a valid Cloud connection
+// This will get called every CFG_SEND_INTERVAL only while we have a valid Cloud connection
 void sendToCloud(void)
 {
    static char json[70];
-         
-   // This part runs every CFG_SEND_INTERVAL seconds
+
+   // This part runs every  seconds
    int rawTemperature = SENSORS_getTempValue();
    int light = SENSORS_getLightValue();
    int len = sprintf(json, "{\"Light\":%d,\"Temp\":\"%d.%02d\"}", light,rawTemperature/100,abs(rawTemperature)%100);
@@ -65,16 +66,39 @@ void sendToCloud(void)
       LED_flashYellow();
    }
 }
- 
- 
+
+ticks YELLOW_task_manager(void *param)
+{
+    LED_YELLOW_set_level( !LED_YELLOW_get_level() );     // toggle the YELLOW LED
+    return true;    // keep me running
+}
+
+strTask_t YELLOW_task = {YELLOW_task_manager};
+
+ticks GREEN_task_manager(void *param)
+{
+    LED_GREEN_set_level( !LED_GREEN_get_level() );     // toggle the GREEN LED
+    return true;    // keep me running
+}
+
+strTask_t GREEN_task = {GREEN_task_manager, "GRE"};
+
 int main(void)
 {
-   application_init();
+    // temporarily disable -iot and run a scheduler test
+    //   application_init();
+    SYSTEM_Initialize();
+    LED_test();
+    ENABLE_INTERRUPTS();
+    puts("RTC Scheduler Test");
+    // create tasks
+    scheduler_create_task(&GREEN_task, 250); //2Hz blink
+    scheduler_create_task(&YELLOW_task, 1000); // 0.5 Hz blink
+    scheduler_print_list();
 
-   while (1)
-   { 
-      runScheduler();  
-   }
-   
-   return 0;
+    while (1) {
+        runScheduler();
+    }
+
+    return 0;
 }
