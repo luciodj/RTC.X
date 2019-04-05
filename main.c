@@ -94,7 +94,7 @@ int main(void)
     // create tasks
     scheduler_create_task(&GREEN_task, 250); //2Hz blink
     scheduler_create_task(&YELLOW_task, 1000); // 0.5 Hz blink
-    scheduler_print_list();
+//    scheduler_print_list();
 
     while (1) {
         runScheduler();

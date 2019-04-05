@@ -36,7 +36,7 @@ static strTask_t *tasks_head        = NULL;
 static strTask_t *volatile due_head = NULL;
 
 volatile ticks  curr_time = 0;
-volatile bool   run       = false;
+//volatile bool   run       = false;
 
 // compare two timestamps and return true if a >= thenb
 // timestamps are unsigned, using Z math (Z = 16-bit or 32-bit)
@@ -62,15 +62,19 @@ void scheduler_init(void)
 
     RTC.PITCTRLA = RTC_PI_bm            // enable PIT function
                  | RTC_PERIOD_CYC8_gc;// 128 (32768/256) cycles per second
+    while(RTC.PITSTATUS & RTC_CTRLBUSY_bm);
+    RTC_INT_ENABLE();
+//	run = true;
+
 }
 
 // Disable all the timers without deleting them from any list. Timers can be
 //    restarted by calling startTimerAtHead
-void scheduler_stop(void)
-{
-	RTC_INT_DISABLE();         // disable rtc interrupts
-	run = false;
-}
+//void scheduler_stop(void)
+//{
+//	RTC_INT_DISABLE();         // disable rtc interrupts
+////	run = false;
+//}
 
 void scheduler_print_list(void)
 {
@@ -85,7 +89,7 @@ void scheduler_print_list(void)
 }
 
 // Returns true if the insert was at the head, false if not
-bool task_queue_insert(strTask_t *task)
+void tasks_queue_insert(strTask_t *task)
 {
 	uint8_t   at_head       = true;
 	strTask_t *insert_point = tasks_head;
@@ -104,33 +108,33 @@ bool task_queue_insert(strTask_t *task)
 	if (at_head) { // the front of the list.
 		task->next = tasks_head;
 		tasks_head = task;
-		return true;
+		return;
 	}
     else { // middle of the list
 		task->next = prev_point->next;
 	}
 	prev_point->next = task;
-	return false;
+	return;
 }
 
-void check_scheduler_queue(void)
-{
-	RTC_INT_DISABLE();         // disable rtc interrupts
-
-	if (tasks_head == NULL) {  // no tasks left
-//        puts("stop");
-		scheduler_stop();
-		return;
-	}
-//    puts("run");
-    RTC_INT_ENABLE();
-	run = true;
-}
+//void check_scheduler_queue(void)
+//{
+//	RTC_INT_DISABLE();         // disable rtc interrupts
+//
+//	if (tasks_head == NULL) {  // no tasks left
+////        puts("stop");
+//		scheduler_stop();
+//		return;
+//	}
+////    puts("run");
+//    RTC_INT_ENABLE();
+//	run = true;
+//}
 
 // Cancel and remove all active tasks
 void scheduler_flush_all(void)
 {
-	scheduler_stop();
+//	scheduler_stop();
 	while (tasks_head != NULL) {
 		scheduler_delete_task(tasks_head);
 	}
@@ -154,7 +158,7 @@ bool scheduler_delete(strTask_t *volatile *queue, strTask_t *task)
 	if (task == *queue) {        // the head is the one we are deleting
 		*queue = (*queue)->next;  // Delete the head
 		ret_val = true;
-		check_scheduler_queue();   // check if the queue is now empty
+//		check_scheduler_queue();   // check if the queue is now empty
 	}
     else {                      // compare from the second task (if present) down
 		strTask_t *delete_point = (*queue)->next;
@@ -168,8 +172,8 @@ bool scheduler_delete(strTask_t *volatile *queue, strTask_t *task)
 			prev_task = delete_point; // advance down the list
 			delete_point = delete_point->next;
 		}
-		RTC_INT_ENABLE();
 	}
+    RTC_INT_ENABLE();
 
 	return ret_val;
 }
@@ -198,17 +202,17 @@ void scheduler_next(void)
 	if (due_head == NULL)
 		return;
 
-	bool tempIE = RTC_INT_GET();    // save interrupt status
+//	bool tempIE = RTC_INT_GET();    // save interrupt status
 	RTC_INT_DISABLE();              // disable rtc interrupts
 
 	strTask_t *pTask = due_head;    // pick the first task due
-    printf("@%d task:%s!\n", curr_time, pTask->name);
+//    printf("@%d task:%s!\n", curr_time, pTask->name);
 	due_head = due_head->next;      // and remove it from the list
-    task_queue_insert(pTask);       // re-enter it immediately in the task queue
+    tasks_queue_insert(pTask);       // re-enter it immediately in the task queue
 //    scheduler_print_list();
-    if (tempIE) {
+//    if (tempIE) {
         RTC_INT_ENABLE();
-    }
+//    }
 
 	bool reschedule = pTask->callback(pTask->payload); // execute the task
 
@@ -228,25 +232,16 @@ bool scheduler_create_task(strTask_t *task, uint16_t ms)
 {
     // If this task is already active, replace it
 	scheduler_delete_task(task);
-	RTC_INT_DISABLE();         // disable rtc interrupts
 
     if ((ms == 0) || (ms > MAX_BASE_PERIOD)){
         return false;
     }
-    scheduler_print_list();
+	RTC_INT_DISABLE();         // disable rtc interrupts
 
     task->period = (ticks)ms;               // store period scaled
     task->due = curr_time + task->period;   // compute due time
-
-	// We only have to start the task at head if the insert was at the head
-	if (task_queue_insert(task)) {
-		check_scheduler_queue();
-	}
-    else {
-		if (run) {
-            RTC_INT_ENABLE();
-        }
-	}
+    tasks_queue_insert(task);
+    RTC_INT_ENABLE();
     return true;    // successful creation
 }
 
