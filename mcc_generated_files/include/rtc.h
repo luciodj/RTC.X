@@ -31,7 +31,7 @@
 #define SCHEDULER_BASE_PERIOD 10    // ms
 
 /** Datatype used to hold the number of ticks until a timer expires */
-typedef uint32_t ticks;
+typedef uint16_t ticks;
 
 /** Typedef for the function pointer for the timeout callback function */
 typedef ticks (*task_callback)(void *payload);

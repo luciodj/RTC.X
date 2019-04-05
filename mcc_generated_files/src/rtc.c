@@ -28,12 +28,20 @@
 #define RTC_INT_DISABLE()   do{RTC.INTCTRL &= ~RTC_OVF_bm;}while(0);
 #define RTC_INT_ENABLE()    do{RTC.INTCTRL |= RTC_OVF_bm;} while(0);
 #define RTC_INT_GET()       ((RTC.INTCTRL & RTC_OVF_bm) >> RTC_OVF_bp)
-
 static strTask_t *tasks_head        = NULL;
 static strTask_t *volatile due_head = NULL;
 
 volatile ticks  curr_time = 0;
 volatile bool   run       = false;
+
+// compare two timestamps and return true if a >= thenb
+// timestamps are unsigned, using Z math (Z = 16-bit or 32-bit)
+// so their difference must be < half Z period
+// to simplify the check we compute the difference and cast it to signed
+inline bool greaterOrEqual(ticks a, ticks thenb)
+{
+    return ((int16_t)(curr_time - tasks_head->due) >= 0);
+}
 
 void scheduler_init(void)
 {
@@ -89,7 +97,7 @@ bool task_queue_insert(strTask_t *task)
     task->next = NULL;
 
 	while (insert_point != NULL) {
-		if (insert_point->period > task->due) {
+		if (greaterOrEqual(insert_point->period, task->due)) {
 			break; // found the spot
 		}
 		prev_point   = insert_point;
@@ -223,13 +231,14 @@ void scheduler_create_task(strTask_t *task, ticks period)
 
 	RTC_INT_DISABLE();         // disable rtc interrupts
 
-	// We only have to start the task at head if the insert was at the head
-    task->period = period;
-    task->due = curr_time + task->period;
+    task->period = period;     // store period
+    task->due = curr_time + task->period;   // compute due time
 
+	// We only have to start the task at head if the insert was at the head
 	if (task_queue_insert(task)) {
 		check_scheduler_queue();
-	} else {
+	}
+    else {
 		if (run) {
             RTC_INT_ENABLE();
         }
@@ -243,9 +252,9 @@ ISR(RTC_CNT_vect)
 
     // activate tasks that are due (move to due list))
     while (  (tasks_head)
-          && ((int16_t)(curr_time - tasks_head->due) < 0) ) {
+          && greaterOrEqual(curr_time, tasks_head->due) ) {
             strTask_t * pTask = tasks_head;
-            pTask->due = curr_time + pTask->period; // set the new due time
+            pTask->due += pTask->period;    // update immediately the due time
 
             pTask->next = due_head;         // insert at head of due
             due_head = pTask;
