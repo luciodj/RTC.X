@@ -5,7 +5,7 @@
 
 #define CFG_TIMEOUT 10000
 
-#define CFG_DEBUG_MSG  0
+#define CFG_DEBUG_MSG  1
 
 #define CFG_ENABLE_CLI 1
 

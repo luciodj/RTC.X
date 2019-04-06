@@ -196,7 +196,7 @@ void scheduler_next(void)
 // If the task was already active/running it will be replaced by this and the
 //    old (active) task will be removed/cancelled first
 // inputs:
-//   ms         time expressed in ms, stored in multiples of SCHEDULER_BASE_PERIOD
+//   ms         time expressed in ms
 //   return     true if successful, false if period < SCHEDULER_BASE_PERIOD
 bool scheduler_create_task(strTask_t *task, uint16_t ms)
 {

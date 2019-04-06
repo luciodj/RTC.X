@@ -41,9 +41,9 @@ SOFTWARE.
 #include "../credentials_storage/credentials_storage.h"
 #include "../led.h"
 
-#define CLOUD_WIFI_TASK_INTERVAL        50L
-#define CLOUD_NTP_TASK_INTERVAL         500L
-#define SOFT_AP_CONNECT_RETRY_INTERVAL  1000L
+#define CLOUD_WIFI_TASK_INTERVAL        50
+#define CLOUD_NTP_TASK_INTERVAL         1000
+#define SOFT_AP_CONNECT_RETRY_INTERVAL  1000
 
 // Scheduler
 ticks ntpTimeFetchTask(void *payload);
@@ -53,16 +53,16 @@ ticks softApConnectTask(void* param);
 strTask_t softApConnectTimer = {softApConnectTask};
 strTask_t ntpTimeFetchTimer  = {ntpTimeFetchTask};
 strTask_t wifiHandlerTimer  = {wifiHandlerTask};
-	
+
 ticks checkBackTask(void * param);
-strTask_t checkBackTimer  = {checkBackTask};	
-	
+strTask_t checkBackTimer  = {checkBackTask};
+
 static bool responseFromProvisionConnect = false;
-       
+
 void (*callback_funcPtr)(uint8_t);
-       
+
 void enable_provision_ap(void);
-       
+
 // Callback function pointer for indicating status updates upwards
 void  (*wifiConnectionStateChangedCallback)(uint8_t  status) = NULL;
 
@@ -75,10 +75,10 @@ int8_t hif_deinit(void * arg);
 void wifi_reinit()
 {
      tstrWifiInitParam param ;
-     
+
      /* Initialize Wi-Fi parameters structure. */
      memset((uint8_t *)&param, 0, sizeof(tstrWifiInitParam));
-     
+
      param.pfAppWifiCb = wifiCallback;
      socketDeinit();
      hif_deinit(NULL);
@@ -98,29 +98,27 @@ void wifi_reinit()
 // Wi-Fi state is undefined      == 0xff
 void wifi_init(void (*funcPtr)(uint8_t), uint8_t mode) {
     callback_funcPtr = funcPtr;
-    
+
     // This uses the global ptr set above
     wifi_reinit();
 
    // Mode == 0 means AP configuration mode
-   if(mode == WIFI_SOFT_AP)
-   {
+   if(mode == WIFI_SOFT_AP) {
       enable_provision_ap();
       debug_printInfo("ACCESS POINT MODE for provisioning");
    }
-   else
-   {
+   else {
       scheduler_create_task(&ntpTimeFetchTimer,CLOUD_NTP_TASK_INTERVAL);
    }
-   
-   
+
+
    scheduler_create_task(&wifiHandlerTimer, CLOUD_WIFI_TASK_INTERVAL);
 }
 
 bool wifi_connectToAp(uint8_t passed_wifi_creds)
 {
 	int8_t e = 0;
-	
+
 	if(passed_wifi_creds == NEW_CREDENTIALS)
 	{
 		e=m2m_wifi_connect((char *)ssid, sizeof(ssid), atoi((char*)authType), (char *)pass, M2M_WIFI_CH_ALL);
@@ -129,14 +127,14 @@ bool wifi_connectToAp(uint8_t passed_wifi_creds)
 	{
 		e=m2m_wifi_default_connect();
 	}
-		
+
 	if(M2M_SUCCESS != e)
 	{
 	  debug_printError("WIFI: wifi error = %d",e);
 	  shared_networking_params.haveERROR = 1;
 	  return false;
 	}
-	
+
 	return true;
 }
 
@@ -162,8 +160,8 @@ bool wifi_disconnectFromAp(void)
 	   {
 		   debug_printError("WIFI: Disconnect from AP error = %d",m2mDisconnectError);
 	      return false;
-	   }	   
-	}	
+	   }
+	}
 	return true;
 }
 
@@ -196,14 +194,14 @@ static void wifiCallback(uint8_t msgType, void *pMsg)
         case M2M_WIFI_RESP_CON_STATE_CHANGED:
         {
             tstrM2mWifiStateChanged *pstrWifiState = (tstrM2mWifiStateChanged *)pMsg;
-            if (pstrWifiState->u8CurrState == M2M_WIFI_CONNECTED) 
+            if (pstrWifiState->u8CurrState == M2M_WIFI_CONNECTED)
             {
 				if (responseFromProvisionConnect)
 				{
 					scheduler_kill_task(&softApConnectTimer);
 					responseFromProvisionConnect = false;
                     LED_blinkingBlue(false);
-					scheduler_create_task(&ntpTimeFetchTimer,CLOUD_NTP_TASK_INTERVAL);	
+					scheduler_create_task(&ntpTimeFetchTimer,CLOUD_NTP_TASK_INTERVAL);
 					application_post_provisioning();
 				}
 				shared_networking_params.haveAPConnection = 1;
@@ -211,19 +209,19 @@ static void wifiCallback(uint8_t msgType, void *pMsg)
 				CREDENTIALS_STORAGE_clearWifiCredentials();
                 LED_stopBlinkingGreen();
                 // We need more than AP to have an APConnection, we also need a DHCP IP address!
-            } else if (pstrWifiState->u8CurrState == M2M_WIFI_DISCONNECTED) 
+            } else if (pstrWifiState->u8CurrState == M2M_WIFI_DISCONNECTED)
 			{
                 scheduler_create_task(&checkBackTimer,CLOUD_WIFI_TASK_INTERVAL);
 				shared_networking_params.amDisconnecting = 1;
             }
-            
+
             if ((wifiConnectionStateChangedCallback != NULL) && (shared_networking_params.amDisconnecting == 0))
             {
                 wifiConnectionStateChangedCallback(pstrWifiState->u8CurrState);
-            }            
+            }
             break;
         }
-        
+
         case M2M_WIFI_REQ_DHCP_CONF:
         {
             // Now we are really connected, we have AP and we have DHCP, start off the MQTT host lookup now, response in dnsHandler
@@ -244,10 +242,9 @@ static void wifiCallback(uint8_t msgType, void *pMsg)
         {
             tstrSystemTime* WINCTime = (tstrSystemTime*)pMsg;
             struct tm theTime;
-
             // Convert to UNIX_EPOCH, this mktime uses years since 1900 and months are 0 based so we
             //    are doing a couple of adjustments here.
-            if(WINCTime->u16Year > 0)
+            if (WINCTime->u16Year > 0)
             {
                 theTime.tm_hour = WINCTime->u8Hour;
                 theTime.tm_min = WINCTime->u8Minute;
@@ -258,26 +255,27 @@ static void wifiCallback(uint8_t msgType, void *pMsg)
                 theTime.tm_isdst = 0;
 
                 set_system_time(mktime(&theTime));
+                printf("seting theTime=%lx ;", theTime);
             }
             break;
         }
-       
-        
+
+
          case M2M_WIFI_RESP_PROVISION_INFO:
          {
             tstrM2MProvisionInfo *pstrProvInfo = (tstrM2MProvisionInfo*)pMsg;
             if(pstrProvInfo->u8Status == M2M_SUCCESS)
             {
 			   sprintf((char*)authType, "%d", pstrProvInfo->u8SecType);
-               debug_printInfo("%s",pstrProvInfo->au8SSID);			   			   
+               debug_printInfo("%s",pstrProvInfo->au8SSID);
 			   strcpy(ssid, (char *)pstrProvInfo->au8SSID);
 			   strcpy(pass, (char *)pstrProvInfo->au8Password);
 			   debug_printInfo("SOFT AP: Connect Credentials sent to WINC");
 			   responseFromProvisionConnect = true;
-			   scheduler_create_task(&softApConnectTimer, 0);
+			   scheduler_create_task(&softApConnectTimer, SOFT_AP_CONNECT_RETRY_INTERVAL);
              }
             break;
-         }        
+         }
 
         default:
         {
