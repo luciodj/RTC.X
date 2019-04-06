@@ -133,7 +133,7 @@ void LED_blinkingBlue(bool amBlinking)
     }
     else
     {
-        scheduler_delete_task(&softAP_timer);
+        scheduler_kill_task(&softAP_timer);
     }
 }
 
@@ -147,7 +147,7 @@ void LED_stopBlinkingGreen(void)
 {
     if (ledForDefaultCredentials == true)
     {
-        scheduler_delete_task(&defaultCredentials_timer);
+        scheduler_kill_task(&defaultCredentials_timer);
         ledForDefaultCredentials = false;
     }
 }

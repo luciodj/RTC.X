@@ -250,7 +250,7 @@ ticks CLOUD_task(void *param)
       { 
         isResetting = true;
         debug_printError("CLOUD: Cloud reset timer is set");
-        scheduler_delete_task(&mqttTimeoutTaskTimer);
+        scheduler_kill_task(&mqttTimeoutTaskTimer);
         scheduler_create_task(&cloudResetTaskTimer, CLOUD_RESET_TIMEOUT);
         cloudResetTimerFlag = true;		 
       }      
@@ -326,8 +326,8 @@ ticks CLOUD_task(void *param)
                if (MQTT_GetConnectionState() == CONNECTED)
                {
                   shared_networking_params.haveERROR = 0;         
-                  scheduler_delete_task(&mqttTimeoutTaskTimer);
-                  scheduler_delete_task(&cloudResetTaskTimer);
+                  scheduler_kill_task(&mqttTimeoutTaskTimer);
+                  scheduler_kill_task(&cloudResetTaskTimer);
                   isResetting = false;
 
                   waitingForMQTT = false;      
@@ -436,7 +436,7 @@ static uint8_t reInit(void)
            return false;
     }
 	
-    scheduler_delete_task(&cloudResetTaskTimer);
+    scheduler_kill_task(&cloudResetTaskTimer);
     debug_printInfo("CLOUD: Cloud reset timer is deleted");
     scheduler_create_task(&mqttTimeoutTaskTimer, CLOUD_MQTT_TIMEOUT_COUNT);
     cloudResetTimerFlag = false;

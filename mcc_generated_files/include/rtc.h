@@ -76,14 +76,14 @@ bool scheduler_create_task(strTask_t *task, uint16_t ms);
  *
  * \return Nothing
  */
-void scheduler_delete_task(strTask_t *task);
+void scheduler_kill_task(strTask_t *task);
 
 /**
  * \brief Delete all scheduled timer tasks
  *
  * \return Nothing
  */
-void scheduler_flush_all(void);
+void scheduler_kill_all(void);
 
 /**
  * \brief Execute the next timer task that has been scheduled for execution.
@@ -96,7 +96,6 @@ void scheduler_flush_all(void);
 void scheduler_next(void);
 
 void scheduler_print_list();
-
 
 #endif /* SCHEDULER_H */
 

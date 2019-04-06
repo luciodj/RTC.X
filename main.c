@@ -73,15 +73,34 @@ ticks YELLOW_task_manager(void *param)
     return true;    // keep me running
 }
 
-strTask_t YELLOW_task = {YELLOW_task_manager};
-
 ticks GREEN_task_manager(void *param)
 {
     LED_GREEN_set_level( !LED_GREEN_get_level() );     // toggle the GREEN LED
     return true;    // keep me running
 }
 
-strTask_t GREEN_task = {GREEN_task_manager, "GRE"};
+ticks RED_task_manager(void *param)
+{
+    LED_RED_set_level( false );     // turn on the RED LED
+    scheduler_kill_all();          // kill all
+    return true;    // keep me running
+}
+
+strTask_t YELLOW_task = {YELLOW_task_manager,"YEL"};
+strTask_t GREEN_task =  {GREEN_task_manager, "GRE"};
+strTask_t RED_task =    {RED_task_manager,   "RED"};
+
+ticks BLUE_task_manager(void *param)
+{
+    LED_BLUE_set_level( false );     // turn on the BLUE LED
+    if (LED_BLUE_get_level()){
+        scheduler_kill_task(&GREEN_task);     // kill the GREEN task
+        scheduler_create_task(&RED_task, 5000);  // replace it with RED task
+    }
+    return false;    // run once only
+}
+
+strTask_t BLUE_task =   {BLUE_task_manager,  "BLU"};
 
 int main(void)
 {
@@ -92,9 +111,9 @@ int main(void)
     ENABLE_INTERRUPTS();
     puts("RTC Scheduler Test");
     // create tasks
-    scheduler_create_task(&GREEN_task, 250); //2Hz blink
+    scheduler_create_task(&GREEN_task,   50); // 2Hz blink
     scheduler_create_task(&YELLOW_task, 1000); // 0.5 Hz blink
-//    scheduler_print_list();
+    scheduler_create_task(&BLUE_task,   5000); // after 5 seconds
 
     while (1) {
         runScheduler();

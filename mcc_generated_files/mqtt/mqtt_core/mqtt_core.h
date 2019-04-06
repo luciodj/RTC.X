@@ -40,7 +40,7 @@
 #define htons(a)                        _htons(a)
 #define ntohs(a)                        _ntohs(a)
 #define timeout_create(task, timeout)  scheduler_create_task(task, timeout)
-#define timeout_delete(task)           scheduler_delete_task(task)
+#define timeout_delete(task)           scheduler_kill_task(task)
 
 // Timeout is calculated on the basis of clock frequency.
 // This macros need to be changed in accordance with the clock frequency.

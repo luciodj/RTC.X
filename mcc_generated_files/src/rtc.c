@@ -36,7 +36,6 @@ static strTask_t *tasks_head        = NULL;
 static strTask_t *volatile due_head = NULL;
 
 volatile ticks  curr_time = 0;
-//volatile bool   run       = false;
 
 // compare two timestamps and return true if a >= thenb
 // timestamps are unsigned, using Z math (Z = 16-bit or 32-bit)
@@ -53,28 +52,15 @@ void scheduler_init(void)
 	while (RTC.STATUS > 0)
         ;      /* Wait for all register to be synchronized */
 
-
 	RTC.CTRLA = RTC_PRESCALER_DIV1_gc   /* Prescaling Factor: RTC Clock/1 */
               | 0 << RTC_RTCEN_bp       /* Enabled */
               | 0 << RTC_RUNSTDBY_bp;   /* Run In Standby: disabled */
-
 	RTC.CLKSEL = RTC_CLKSEL_INT1K_gc;   /* Clock Select: Internal 1kHz OSC */
-
     RTC.PITCTRLA = RTC_PI_bm            // enable PIT function
                  | RTC_PERIOD_CYC8_gc;// 128 (32768/256) cycles per second
-    while(RTC.PITSTATUS & RTC_CTRLBUSY_bm);
+//    while(RTC.PITSTATUS & RTC_CTRLBUSY_bm);
     RTC_INT_ENABLE();
-//	run = true;
-
 }
-
-// Disable all the timers without deleting them from any list. Timers can be
-//    restarted by calling startTimerAtHead
-//void scheduler_stop(void)
-//{
-//	RTC_INT_DISABLE();         // disable rtc interrupts
-////	run = false;
-//}
 
 void scheduler_print_list(void)
 {
@@ -117,30 +103,16 @@ void tasks_queue_insert(strTask_t *task)
 	return;
 }
 
-//void check_scheduler_queue(void)
-//{
-//	RTC_INT_DISABLE();         // disable rtc interrupts
-//
-//	if (tasks_head == NULL) {  // no tasks left
-////        puts("stop");
-//		scheduler_stop();
-//		return;
-//	}
-////    puts("run");
-//    RTC_INT_ENABLE();
-//	run = true;
-//}
-
 // Cancel and remove all active tasks
-void scheduler_flush_all(void)
+void scheduler_kill_all(void)
 {
 //	scheduler_stop();
 	while (tasks_head != NULL) {
-		scheduler_delete_task(tasks_head);
+		scheduler_kill_task(tasks_head);
 	}
 
 	while (due_head != NULL) {
-		scheduler_delete_task(due_head);
+		scheduler_kill_task(due_head);
 	}
 }
 
@@ -180,7 +152,7 @@ bool scheduler_delete(strTask_t *volatile *queue, strTask_t *task)
 
 // This will cancel/remove a running task. If the task is already due it will
 //     also remove it from the callback queue
-void scheduler_delete_task(strTask_t *task)
+void scheduler_kill_task(strTask_t *task)
 {
     if (!scheduler_delete(&tasks_head, task))
     {
@@ -202,7 +174,6 @@ void scheduler_next(void)
 	if (due_head == NULL)
 		return;
 
-//	bool tempIE = RTC_INT_GET();    // save interrupt status
 	RTC_INT_DISABLE();              // disable rtc interrupts
 
 	strTask_t *pTask = due_head;    // pick the first task due
@@ -210,15 +181,14 @@ void scheduler_next(void)
 	due_head = due_head->next;      // and remove it from the list
     tasks_queue_insert(pTask);       // re-enter it immediately in the task queue
 //    scheduler_print_list();
-//    if (tempIE) {
-        RTC_INT_ENABLE();
-//    }
+
+    RTC_INT_ENABLE();
 
 	bool reschedule = pTask->callback(pTask->payload); // execute the task
 
 	// did the task decide to terminate (return 0 / false)
 	if (!reschedule) {
-        scheduler_delete_task(pTask);
+        scheduler_kill_task(pTask);
 	}
 }
 
@@ -231,7 +201,7 @@ void scheduler_next(void)
 bool scheduler_create_task(strTask_t *task, uint16_t ms)
 {
     // If this task is already active, replace it
-	scheduler_delete_task(task);
+	scheduler_kill_task(task);
 
     if ((ms == 0) || (ms > MAX_BASE_PERIOD)){
         return false;

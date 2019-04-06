@@ -200,7 +200,7 @@ static void wifiCallback(uint8_t msgType, void *pMsg)
             {
 				if (responseFromProvisionConnect)
 				{
-					scheduler_delete_task(&softApConnectTimer);
+					scheduler_kill_task(&softApConnectTimer);
 					responseFromProvisionConnect = false;
                     LED_blinkingBlue(false);
 					scheduler_create_task(&ntpTimeFetchTimer,CLOUD_NTP_TASK_INTERVAL);	
@@ -231,7 +231,7 @@ static void wifiCallback(uint8_t msgType, void *pMsg)
             {
 				if (shared_networking_params.amDisconnecting == 1)
 				{
-					scheduler_delete_task(&checkBackTimer);
+					scheduler_kill_task(&checkBackTimer);
 					shared_networking_params.amDisconnecting = 0;
 				}
 				shared_networking_params.haveERROR = 0;
