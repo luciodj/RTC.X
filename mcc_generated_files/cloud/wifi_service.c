@@ -255,7 +255,7 @@ static void wifiCallback(uint8_t msgType, void *pMsg)
                 theTime.tm_isdst = 0;
 
                 set_system_time(mktime(&theTime));
-                printf("seting theTime=%lx ;", theTime);
+//                printf("seting theTime=%lx ;", theTime);
             }
             break;
         }
